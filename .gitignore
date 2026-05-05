@@ -224,3 +224,10 @@ __pycache__/
 
 # Logs
 *.log
+
+venv/
+__pycache__/
+*.pyc
+.env
+hh_tracker.db
+.alembic/
