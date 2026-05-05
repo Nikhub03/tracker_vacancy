@@ -1,20 +1,31 @@
 # app/main.py
 from fastapi import FastAPI
-# Импортируем наш роутер из папки routers
+from fastapi.middleware.cors import CORSMiddleware
 from app.routers import vacancies
+from fastapi.staticfiles import StaticFiles
+import os
+
+# Если папка static существует, раздаём из неё файлы
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app = FastAPI(title="HH Vacancy Tracker")
 
-# Подключаем роутер вакансий.
-# FastAPI "включит" все маршруты из vacancies.router в наше главное приложение.
+# Разрешаем запросы с любых источников (на время разработки)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(vacancies.router)
 
-
 @app.get("/")
-def read_root():
-    return {"message": "Hello, World!"}
-
+def root():
+    return {"message": "Welcome to HH Vacancy Tracker"}
 
 @app.get("/health")
-def health_check():
+def health():
     return {"status": "ok"}
