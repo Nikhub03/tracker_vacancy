@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Мои вакансии – Трекер</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/static/index.html">Трекер</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav">
+            <li class="nav-item">
+              <a class="nav-link" href="/static/index.html">Главная</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/static/vacancies.html">Поиск</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active" href="/static/my_vacancies.html"
+                >Мои вакансии</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <div class="container mt-4">
+      <div class="d-flex justify-content-between align-items-center">
+        <h1>Мои сохранённые вакансии</h1>
+        <div>
+          <button id="deleteSelectedBtn" class="btn btn-danger btn-sm me-2">
+            🗑️ Удалить выбранные
+          </button>
+          <button id="deleteAllBtn" class="btn btn-outline-danger btn-sm">
+            ⚠️ Удалить все
+          </button>
+        </div>
+      </div>
+
+      <!-- Поиск по сохранённым вакансиям -->
+      <div class="row mt-3 mb-3">
+        <div class="col-md-6">
+          <input
+            type="text"
+            id="searchMyVacancies"
+            class="form-control"
+            placeholder="🔍 Поиск по названию..."
+          />
+        </div>
+        <div class="col-md-3">
+          <select id="sortBy" class="form-select">
+            <option value="title">Сортировать по названию</option>
+            <option value="company">Сортировать по компании</option>
+            <option value="status">Сортировать по статусу</option>
+            <option value="date">Сортировать по дате (новые)</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <button id="refreshBtn" class="btn btn-secondary w-100">
+            🔄 Обновить
+          </button>
+        </div>
+      </div>
+
+      <div id="myVacanciesList" class="row">
+        <div class="col-12 text-center">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Загрузка...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно для подробной информации -->
+    <div
+      class="modal fade"
+      id="detailsModal"
+      tabindex="-1"
+      aria-labelledby="detailsModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="detailsModalLabel">Детали вакансии</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Закрыть"
+            ></button>
+          </div>
+          <div class="modal-body" id="modalBody">
+            <!-- Здесь будет загружаться контент -->
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Закрыть
+            </button>
+            <a href="#" id="modalUrl" target="_blank" class="btn btn-primary"
+              >Перейти к вакансии</a
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // ---------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ----------
+      function escapeHtml(str) {
+        if (!str) return "";
+        return str.replace(/[&<>]/g, function (m) {
+          if (m === "&") return "&amp;";
+          if (m === "<") return "&lt;";
+          if (m === ">") return "&gt;";
+          return m;
+        });
+      }
+
+      let allVacancies = []; // все загруженные вакансии
+      let filteredVacancies = []; // после поиска/сортировки
+
+      // ---------- ЗАГРУЗКА ВСЕХ ВАКАНСИЙ ----------
+      async function loadAllVacancies() {
+        const container = document.getElementById("myVacanciesList");
+        container.innerHTML =
+          '<div class="col-12 text-center"><div class="spinner-border text-primary" role="status"></div></div>';
+        try {
+          const response = await fetch("/vacancies");
+          if (!response.ok) throw new Error("Ошибка загрузки");
+          allVacancies = await response.json();
+          applyFilterAndSort();
+        } catch (err) {
+          container.innerHTML = `<div class="col-12 text-danger">Ошибка: ${err.message}</div>`;
+        }
+      }
+
+      // ---------- ФИЛЬТРАЦИЯ И СОРТИРОВКА ----------
+      function applyFilterAndSort() {
+        const searchTerm = document
+          .getElementById("searchMyVacancies")
+          .value.trim()
+          .toLowerCase();
+        let filtered = [...allVacancies];
+        if (searchTerm) {
+          filtered = filtered.filter((v) =>
+            v.title.toLowerCase().includes(searchTerm),
+          );
+        }
+        const sortBy = document.getElementById("sortBy").value;
+        switch (sortBy) {
+          case "title":
+            filtered.sort((a, b) => a.title.localeCompare(b.title));
+            break;
+          case "company":
+            filtered.sort((a, b) => a.company.localeCompare(b.company));
+            break;
+          case "status":
+            const order = {
+              new: 0,
+              favorite: 1,
+              applied: 2,
+              interview: 3,
+              rejected: 4,
+              offer: 5,
+            };
+            filtered.sort(
+              (a, b) => (order[a.status] || 99) - (order[b.status] || 99),
+            );
+            break;
+          case "date":
+            filtered.sort(
+              (a, b) => new Date(b.created_at) - new Date(a.created_at),
+            );
+            break;
+          default:
+            break;
+        }
+        filteredVacancies = filtered;
+        renderVacancies();
+      }
+
+      // ---------- ОТРИСОВКА КАРТОЧЕК С ДОП. ИНФОРМАЦИЕЙ ----------
+      function renderVacancies() {
+        const container = document.getElementById("myVacanciesList");
+        if (filteredVacancies.length === 0) {
+          container.innerHTML =
+            '<div class="col-12">Нет вакансий, удовлетворяющих условиям.</div>';
+          return;
+        }
+        let html = "";
+        for (let vac of filteredVacancies) {
+          // Формируем строку зарплаты
+          let salaryText = "Не указана";
+          if (vac.salary_min && vac.salary_max) {
+            salaryText = `${vac.salary_min} – ${vac.salary_max} ₽`;
+          } else if (vac.salary_min) {
+            salaryText = `от ${vac.salary_min} ₽`;
+          } else if (vac.salary_max) {
+            salaryText = `до ${vac.salary_max} ₽`;
+          }
+          // Опыт
+          const expText = vac.experience ? vac.experience : "Не указан";
+          // График и занятость
+          const scheduleText = vac.schedule ? vac.schedule : "Не указан";
+          const employmentText = vac.employment ? vac.employment : "Не указана";
+
+          html += `
+                    <div class="col-md-6 col-lg-4 mb-3" data-vacancy-id="${vac.id}">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input vacancy-checkbox" type="checkbox" data-id="${vac.id}" id="chk_${vac.id}">
+                                    <label class="form-check-label" for="chk_${vac.id}"></label>
+                                </div>
+                                <h5 class="card-title">${escapeHtml(vac.title)}</h5>
+                                <h6 class="card-subtitle mb-2 text-muted">${escapeHtml(vac.company)}</h6>
+                                <p class="card-text mb-1">💰 Зарплата: ${escapeHtml(salaryText)}</p>
+                                <p class="card-text mb-1">🎓 Опыт: ${escapeHtml(expText)}</p>
+                                <p class="card-text mb-1">⏰ График: ${escapeHtml(scheduleText)}</p>
+                                <p class="card-text mb-1">📋 Занятость: ${escapeHtml(employmentText)}</p>
+                                <p class="card-text mt-2">🏷️ Статус: <strong>${escapeHtml(vac.status)}</strong></p>
+                                <button class="btn btn-sm btn-info mt-2 me-2" onclick="showDetails(${vac.id})">📖 Подробно</button>
+                                <button class="btn btn-sm btn-outline-secondary mt-2" onclick="changeStatus(${vac.id}, this)">Изменить статус</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+        }
+        container.innerHTML = html;
+      }
+
+      // ---------- ПОКАЗАТЬ ПОДРОБНОСТИ (МОДАЛЬНОЕ ОКНО) ----------
+      async function showDetails(vacancyId) {
+        // Найти вакансию в current списке
+        const vacancy = allVacancies.find((v) => v.id === vacancyId);
+        if (!vacancy) return;
+        // Заполнить модальное окно
+        let salaryText = "Не указана";
+        if (vacancy.salary_min && vacancy.salary_max) {
+          salaryText = `${vacancy.salary_min} – ${vacancy.salary_max} ₽`;
+        } else if (vacancy.salary_min) {
+          salaryText = `от ${vacancy.salary_min} ₽`;
+        } else if (vacancy.salary_max) {
+          salaryText = `до ${vacancy.salary_max} ₽`;
+        }
+        const desc = vacancy.description ? vacancy.description : "Нет описания";
+        const modalBody = document.getElementById("modalBody");
+        modalBody.innerHTML = `
+                <h6>${escapeHtml(vacancy.title)}</h6>
+                <p><strong>Компания:</strong> ${escapeHtml(vacancy.company)}</p>
+                <p><strong>Зарплата:</strong> ${escapeHtml(salaryText)}</p>
+                <p><strong>Требуемый опыт:</strong> ${escapeHtml(vacancy.experience || "Не указан")}</p>
+                <p><strong>График работы:</strong> ${escapeHtml(vacancy.schedule || "Не указан")}</p>
+                <p><strong>Занятость:</strong> ${escapeHtml(vacancy.employment || "Не указана")}</p>
+                <p><strong>Описание:</strong> ${escapeHtml(desc)}</p>
+                <p><strong>Статус:</strong> ${escapeHtml(vacancy.status)}</p>
+            `;
+        const modalUrl = document.getElementById("modalUrl");
+        modalUrl.href = vacancy.url;
+        modalUrl.target = "_blank";
+        const modal = new bootstrap.Modal(
+          document.getElementById("detailsModal"),
+        );
+        modal.show();
+      }
+
+      // ---------- ИЗМЕНЕНИЕ СТАТУСА ----------
+      const STATUS_OPTIONS = [
+        "Новая",
+        "Фаворитная",
+        "Заявленная",
+        "Собеседование",
+        "Отклонено",
+        "Оффер",
+      ];
+
+      async function changeStatus(vacancyId, buttonElement) {
+        const cardBody = buttonElement.closest(".card-body");
+        const select = document.createElement("select");
+        select.className = "form-select form-select-sm mt-2";
+        for (let s of STATUS_OPTIONS) {
+          let option = document.createElement("option");
+          option.value = s;
+          option.textContent = s;
+          select.appendChild(option);
+        }
+        const confirmBtn = document.createElement("button");
+        confirmBtn.textContent = "Сохранить";
+        confirmBtn.className = "btn btn-sm btn-success mt-2 ms-2";
+        buttonElement.style.display = "none";
+        cardBody.appendChild(select);
+        cardBody.appendChild(confirmBtn);
+
+        confirmBtn.onclick = async () => {
+          const newStatus = select.value;
+          try {
+            const response = await fetch(`/vacancies/${vacancyId}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ status: newStatus }),
+            });
+            if (!response.ok) throw new Error("Ошибка обновления");
+            // Обновить статус в глобальном массиве
+            const idx = allVacancies.findIndex((v) => v.id === vacancyId);
+            if (idx !== -1) allVacancies[idx].status = newStatus;
+            applyFilterAndSort(); // перерисовать
+          } catch (err) {
+            alert("Не удалось обновить статус: " + err.message);
+          } finally {
+            select.remove();
+            confirmBtn.remove();
+            buttonElement.style.display = "inline-block";
+          }
+        };
+      }
+
+      // ---------- УДАЛЕНИЕ ВЫБРАННЫХ ----------
+      async function deleteSelected() {
+        const checkboxes = document.querySelectorAll(
+          ".vacancy-checkbox:checked",
+        );
+        if (checkboxes.length === 0) {
+          alert("Ничего не выбрано.");
+          return;
+        }
+        if (!confirm(`Удалить выбранные вакансии (${checkboxes.length} шт.)?`))
+          return;
+        const ids = Array.from(checkboxes).map((cb) =>
+          parseInt(cb.getAttribute("data-id")),
+        );
+        for (let id of ids) {
+          try {
+            await fetch(`/vacancies/${id}`, { method: "DELETE" });
+          } catch (e) {
+            console.error(`Ошибка удаления ${id}:`, e);
+          }
+        }
+        await loadAllVacancies();
+      }
+
+      // ---------- УДАЛИТЬ ВСЕ ----------
+      async function deleteAll() {
+        if (!allVacancies.length) {
+          alert("Нет вакансий для удаления.");
+          return;
+        }
+        if (
+          !confirm(
+            `Удалить все ${allVacancies.length} вакансий? Это действие необратимо.`,
+          )
+        )
+          return;
+        for (let vac of allVacancies) {
+          try {
+            await fetch(`/vacancies/${vac.id}`, { method: "DELETE" });
+          } catch (e) {
+            console.error(`Ошибка удаления ${vac.id}:`, e);
+          }
+        }
+        await loadAllVacancies();
+      }
+
+      // ---------- ИНИЦИАЛИЗАЦИЯ ----------
+      document
+        .getElementById("searchMyVacancies")
+        .addEventListener("input", applyFilterAndSort);
+      document
+        .getElementById("sortBy")
+        .addEventListener("change", applyFilterAndSort);
+      document
+        .getElementById("deleteSelectedBtn")
+        .addEventListener("click", deleteSelected);
+      document
+        .getElementById("deleteAllBtn")
+        .addEventListener("click", deleteAll);
+      document
+        .getElementById("refreshBtn")
+        .addEventListener("click", () => loadAllVacancies());
+      window.addEventListener("DOMContentLoaded", loadAllVacancies);
+    </script>
+  </body>
+</html>
