@@ -7,8 +7,8 @@
 ## 🛠️ Технологический стек
 
 - **Backend**: Python 3.11, FastAPI, SQLAlchemy, Alembic
-- **Database**: SQLite (можно легко переключить на PostgreSQL)
-- **Frontend**: HTML5, Bootstrap 5, JavaScript (fetch API)
+- **Database**: SQLite
+- **Frontend**: HTML5, Bootstrap 5, JavaScript
 - **API**: Trudvsem (публичный, без токенов)
 - **Дополнительно**: Uvicorn, httpx, loguru, Pydantic
 
@@ -131,6 +131,7 @@ Content-Type: application/json
 - Добавить авторизацию (чтобы у разных пользователей были свои списки)
 - Настроить асинхронное обновление вакансий через Celery + Redis
 - Деплой на Koyeb/Render с PostgreSQL
+- Переключиться с SQLite на PostgreSQL
 
 ---
 
