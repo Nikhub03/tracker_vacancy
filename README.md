@@ -72,6 +72,7 @@ http://127.0.0.1:8000
 
 ## 📁 Структура проекта
 
+```
 tracker_vacancy/
 ├── app/
 │   ├── __init__.py
@@ -91,6 +92,7 @@ tracker_vacancy/
 ├── alembic.ini
 ├── requirements.txt
 └── README.md
+```
 
 ---
 
