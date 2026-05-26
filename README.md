@@ -32,7 +32,7 @@
 
 ### 1. Клонировать репозиторий
 
-git clone https://github.com/ТВОЙ_ЛОГИН/tracker_vacancy.git
+git clone https://github.com/Nikhub03/tracker_vacancy.git
 cd tracker_vacancy
 
 ### 2. Создать виртуальное окружение и активировать его
