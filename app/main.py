@@ -5,14 +5,14 @@ import os
 
 from app.routers import vacancies
 
-# 1. Сначала создаём приложение
+# Создание приложения
 app = FastAPI(title="HH Vacancy Tracker")
 
-# 2. Теперь можно монтировать статику (если папка существует)
+# Монтировка статики
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 
-# 3. Добавляем CORS (разрешаем запросы с любых источников на время разработки)
+# Добавление CORS (разрешаем запросы с любых источников на время разработки)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,13 +21,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 4. Подключаем роутеры
+# Роутеры
 app.include_router(vacancies.router)
 
-# 5. Эндпоинты
+# Эндпоинты
 @app.get("/")
 def root():
-    return {"message": "Welcome to HH Vacancy Tracker"}
+    return {"message": "Welcome to Vacancy Tracker"}
 
 @app.get("/health")
 def health():
