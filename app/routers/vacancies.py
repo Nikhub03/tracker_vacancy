@@ -1,20 +1,19 @@
-# app/routers/vacancies.py
 import httpx
 from typing import List, Optional
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from loguru import logger   # Добавим логирование для отладки
+from loguru import logger
 
 from app import models, schemas
 from app.database import get_db
-from app.services import vacancy_service  # <-- Импортируем новый сервис
+from app.services import vacancy_service
 
 router = APIRouter(prefix="/vacancies", tags=["vacancies"])
 
 
-# ===================== ПОИСК И СОХРАНЕНИЕ (НОВЫЙ ЭНДПОИНТ) =====================
+# ===================== ПОИСК И СОХРАНЕНИЕ =====================
 @router.get("/search", response_model=List[schemas.Vacancy])
 async def search_and_save_vacancies(
     query: str,                     # Поисковый запрос из query-параметра
@@ -24,9 +23,9 @@ async def search_and_save_vacancies(
     Ищет вакансии на API Работа России по запросу, сохраняет новые в БД,
     возвращает список сохранённых (только новых) вакансий.
     """
-    # 1. Получаем данные от API Работа России
+    # 1. Получение данных от API Работа России
     try:
-        # Вызываем функцию из нашего нового vacancy_service
+        # Вызов функции из vacancy_service
         items = await vacancy_service.fetch_vacancies(query)
     except httpx.TimeoutException:
         logger.error(f"Timeout while fetching from Trudvsem for query '{query}'")
@@ -41,27 +40,27 @@ async def search_and_save_vacancies(
     saved_vacancies = []
     # 2. Проходим по каждой полученной вакансии
     for item in items:
-        # 2a. Преобразуем данные из формата API в наш внутренний формат
+        # 2a. Преобразование данных из формата API во внутренний формат
         vacancy_data = vacancy_service.map_vacancy_to_db(item)
         if not vacancy_data.get("url"):
             logger.warning(f"Skipping vacancy without URL: {vacancy_data.get('title')}")
             continue
         
-        # 2b. Проверяем, есть ли уже вакансия с таким URL в базе
+        # 2b. Проверка, есть ли уже вакансия с таким URL в базе
         existing = db.query(models.Vacancy).filter(models.Vacancy.url == vacancy_data["url"]).first()
         if existing:
             continue    # Если есть, пропускаем
             
-        # 2c. Создаём новую запись в БД
+        # 2c. Создание новой записи в БД
         new_vacancy = models.Vacancy(**vacancy_data)
         db.add(new_vacancy)
         
         try:
-            db.commit()          # Пытаемся сохранить
-            db.refresh(new_vacancy) # Обновляем объект из БД (чтобы получить ID)
+            db.commit()          # Попытка сохранить
+            db.refresh(new_vacancy) # Обновление объекта из БД (чтобы получить ID)
             saved_vacancies.append(new_vacancy)
         except IntegrityError:
-            # Если произошла ошибка целостности (например, дубликат URL), откатываем транзакцию
+            # Если произошла ошибка целостности (например, дубликат URL), будет откат транзакции
             db.rollback()
             logger.warning(f"IntegrityError: Vacancy with URL {vacancy_data['url']} might already exist.")
             continue
@@ -70,7 +69,7 @@ async def search_and_save_vacancies(
 
 
 # ===================== ОСТАЛЬНЫЕ ЭНДПОИНТЫ (CRUD) =====================
-# Этот эндпоинт возвращает список вакансий из БД (не из API!)
+# Этот эндпоинт возвращает список вакансий из БД
 # Он используется для отображения всех сохраненных вакансий на странице "Мои вакансии"
 @router.get("/", response_model=List[schemas.Vacancy])
 def get_vacancies(
