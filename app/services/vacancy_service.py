@@ -1,4 +1,3 @@
-# app/services/vacancy_service.py
 import httpx, json
 from typing import List, Dict, Any
 from loguru import logger
@@ -12,11 +11,11 @@ async def fetch_vacancies(query: str, per_page: int = 20) -> List[Dict[str, Any]
     """
     logger.info(f"Fetching vacancies from Trudvsem for query='{query}'")
     
-    # Формируем параметры запроса для поиска по тексту и пагинации
+    # Формирование параметров запроса для поиска по тексту и пагинации
     params = {
         "text": query,       # Ключевое слово для поиска
         "limit": per_page,   # Количество результатов на странице
-        "offset": 0          # Начинаем с первой страницы
+        "offset": 0          # Начинает с первой страницы
     }
 
     try:
@@ -33,7 +32,7 @@ async def fetch_vacancies(query: str, per_page: int = 20) -> List[Dict[str, Any]
             vacancies_data = data.get("results", {}).get("vacancies", [])
             
             # В ответе каждая вакансия обёрнута в объект {"vacancy": { ... }},
-            # поэтому мы извлекаем внутренний словарь
+            # поэтому будет извлекаться внутренний словарь
             vacancies = [item.get("vacancy", {}) for item in vacancies_data if item.get("vacancy")]
             
             logger.info(f"Successfully fetched {len(vacancies)} vacancies")
@@ -55,8 +54,6 @@ def map_vacancy_to_db(vacancy_data: Dict[str, Any]) -> Dict[str, Any]:
     Преобразует словарь с данными о вакансии от API Работа России в словарь,
     который подходит для создания объекта модели Vacancy в нашей БД.
     """
-    # --- ВАЖНО: ЭТИ КЛЮЧИ НУЖНО ПРОВЕРИТЬ И, ВОЗМОЖНО, ИЗМЕНИТЬ ---
-    # Название вакансии. У API "Работа России" оно может лежать в поле "job-name".
     title = vacancy_data.get("job-name", "")
     if not title:
         title = vacancy_data.get("job_name", "") # Запасной вариант
@@ -69,10 +66,10 @@ def map_vacancy_to_db(vacancy_data: Dict[str, Any]) -> Dict[str, Any]:
     # Ссылка на вакансию — в API Работа России это поле "vac_url"
     url = vacancy_data.get("vac_url", "")
     if not url:
-        # На всякий случай, если vac_url нет, можно оставить пустым (такая вакансия не сохранится)
+        # На всякий случай, если vac_url нет, можно оставить пустым, такая вакансия не будет сохраненяться
         url = ""
 
-    # Извлекаем зарплату (может быть словарём, строкой или None)
+    # Извлекаем зарплату
     salary_data = vacancy_data.get("salary")
     salary_str = ""
     if isinstance(salary_data, dict):
@@ -87,7 +84,7 @@ def map_vacancy_to_db(vacancy_data: Dict[str, Any]) -> Dict[str, Any]:
     elif isinstance(salary_data, str):
         salary_str = salary_data
     
-    # Возвращаем словарь, ключи которого соответствуют полям модели Vacancy
+    # Возврат словаря, ключи которого соответствуют полям модели Vacancy
     return {
         "title": title,
         "company": company,
