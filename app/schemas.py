@@ -1,4 +1,3 @@
-# app/schemas.py
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
@@ -13,13 +12,13 @@ class VacancyBase(BaseModel):
 class VacancyCreate(VacancyBase):
     status: Optional[str] = "new"
 
-# Схема, которую мы будем отдавать клиенту (GET-запрос)
+# Схема, которая отдается клиенту (GET-запрос)
 # Наследуется от VacancyBase и добавляет поля, которые приходят из базы данных.
 class Vacancy(VacancyBase):
     id: int
     status: str
     created_at: datetime
 
-    # Этот вложенный класс говорит Pydantic, как преобразовать данные из SQLAlchemy-модели в нашу схему.
+    # Этот вложенный класс говорит Pydantic, как преобразовать данные из SQLAlchemy-модели в схему.
     class Config:
         from_attributes = True
