@@ -6,7 +6,7 @@ import os
 from app.routers import vacancies
 
 # Создание приложения
-app = FastAPI(title="HH Vacancy Tracker")
+app = FastAPI(title="Vacancy Tracker")
 
 # Монтировка статики
 if os.path.exists("static"):
